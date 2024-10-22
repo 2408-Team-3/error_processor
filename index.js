@@ -1,44 +1,59 @@
 import axios from 'axios';
-// let dbConnection = createNewDbConnection();
+import dotenv from 'dotenv';
+import pkg from 'pg';
+
+dotenv.config();
+const { Pool } = pkg;
+
+const pool = new Pool({
+  user: process.env.PGUSER,  
+  host: process.env.PGUSERHOST,
+  database: process.env.PGDATABASE, 
+  password: process.env.PGPASSWORD, 
+  port: process.env.PGPORT, 
+});
 
 export const handler = async (event, context) => {
-  const body = JSON.parse(event.body || '{}');
+  const { error_data } = JSON.parse(event.body || '{}');
+  console.log('incoming error data: ', error_data);
 
-  // Request Payload Format:
-  //   error_data = {
-  //     'error': raw_error_data,
-  //     'timestamp':  request.timestamp.isoformat(),
-  //     'type': error_type
-  //     'reason': reason, // ? different lambdas for errors, requests, promises?
-  // }
-
-  // Raw Error Data Format:
-  //   raw_error_data = {
-  //     'name': type(e).__name__,
-  //     'message': str(e),
-  //     'stack_trace': traceback.format_exc(),
-  //     'status_code': status_code
-  // }
-
-  const error_data = body.error_data;
-
-  // In the case statements, format for the database
-  switch (error_data.type) {
-    case 'unhandledError':
-
-    case 'handledError':
-
-    case 'unhandledRejectedPromise':
-
-    case 'handledRejectedPromise':
-
+  if (!error_data || !error_data.type || !error_data.timestamp) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ message: 'Invalid error data' }),
+    };
   }
 
-  // Webhook: post request to backend to inform of incoming data
-  // axios.post()
+  try {
+    const query = `INSERT INTO error_logs (name, request_id, message, promise_id, 
+    created_at, line_number, col_number, project_id, stack_trace) VALUES 
+    ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`;
 
-  return {
-    statusCode: 200,
-    body: { message: 'error data received'}
-  };
+    const result = await pool.query(
+      query,
+      [
+        error_data.error.name || 'UnknownError',
+        null,
+        error_data.error.message || 'No message provided',
+        null,
+        new Date(error_data.timestamp).toISOString(),
+        error_data.line_number || null,
+        error_data.col_number || null,
+        error_data.project_id || null,
+        error_data.error.stack_trace || 'No stack trace available'
+      ]
+    );
+
+    // Webhook: post request to backend to inform of incoming data
+    // axios.post(process.env.WEBHOOK_ENDPOINT, { data: 'new error data'});
+
+    return {
+      status: 200,
+      body: { message: 'error data received'}
+    };
+
+  } catch (e) {
+    console.error(e);
+    throw new Error('Error saving request to PostgreSQL');
+  }
 };
