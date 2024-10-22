@@ -14,10 +14,10 @@ const pool = new Pool({
 });
 
 export const handler = async (event, context) => {
-  const { error_data } = JSON.parse(event.body || '{}');
-  console.log('incoming error data: ', error_data);
+  const { data } = JSON.parse(event.body || '{}');
+  console.log('incoming error data: ', data);
 
-  if (!error_data || !error_data.type || !error_data.timestamp) {
+  if (!data) {
     return {
       statusCode: 400,
       body: JSON.stringify({ message: 'Invalid error data' }),
@@ -25,22 +25,21 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const query = `INSERT INTO error_logs (name, request_id, message, promise_id, 
-    created_at, line_number, col_number, project_id, stack_trace) VALUES 
-    ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`;
+    const query = `INSERT INTO error_logs (name, message, created_at,
+    line_number, col_number, project_id, stack_trace, handled) VALUES 
+    ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`;
 
     const result = await pool.query(
       query,
       [
-        error_data.error.name || 'UnknownError',
-        null,
-        error_data.error.message || 'No message provided',
-        null,
-        new Date(error_data.timestamp).toISOString(),
-        error_data.line_number || null,
-        error_data.col_number || null,
-        error_data.project_id || null,
-        error_data.error.stack_trace || 'No stack trace available'
+        data.error.name || 'UnknownError',
+        data.error.message || 'No message provided',
+        data.timestamp,
+        data.line_number || null, // extract programmatically from stack trace
+        data.col_number || null, // extract programmatically from stack trace
+        data.project_id || null,
+        data.error.stack_trace || 'No stack trace available',
+        data.handled,
       ]
     );
 
