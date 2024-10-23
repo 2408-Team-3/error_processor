@@ -6,7 +6,7 @@ const mockEvent = {
       error: {
         name: 'MockError',
         message: 'A mock error occurred',
-        stack_trace: 'Mock stack trace',
+        stack: 'Mock stack trace',
       },
       handled: false,
       timestamp: new Date().toISOString(),
