@@ -38,7 +38,7 @@ export const handler = async (event, context) => {
         data.line_number || null, // extract programmatically from stack trace
         data.col_number || null, // extract programmatically from stack trace
         data.project_id || null,
-        data.error.stack_trace || 'No stack trace available',
+        data.error.stack || 'No stack trace available',
         data.handled,
       ]
     );
