@@ -14,15 +14,17 @@ const pool = new Pool({
 });
 
 export const handler = async (event, context) => {
-  const { data } = JSON.parse(event.body || '{}');
-  console.log('incoming error data: ', data);
+  console.log('Raw Event: ', JSON.stringify(event));
 
-  if (!data) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ message: 'Invalid error data' }),
-    };
-  }
+  const { data } = JSON.parse(event.body);
+  console.log('Parsed data:', data);
+
+  // if (!data || !data.error || !data.timestamp || !data.project_id) {
+  //  return {
+  //    statusCode: 400,
+  //    body: JSON.stringify({ message: 'Invalid error data' }),
+  //  };
+  // }
 
   try {
     const query = `INSERT INTO error_logs (name, message, created_at,
@@ -43,16 +45,26 @@ export const handler = async (event, context) => {
       ]
     );
 
+    console.log('PostgreSQL insert result:', result);
+
     // Webhook: post request to backend to inform of incoming data
     // axios.post(process.env.WEBHOOK_ENDPOINT, { data: 'new error data'});
 
     return {
-      status: 200,
-      body: { message: 'error data received'}
+      statusCode: 200,
+      body: JSON.stringify({ message: 'Error data received'}),
+      headers: {
+        'Content-Type': 'application/json',
+      }
     };
-
   } catch (e) {
-    console.error(e);
-    throw new Error('Error saving request to PostgreSQL');
+    console.error("Error saving to PostgreSQL:", e);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: 'Error saving error data to PostgreSQL'}),
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    };
   }
 };
