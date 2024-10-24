@@ -55,6 +55,9 @@ export const handler = async (event, context) => {
       body: JSON.stringify({ message: 'Error data received'}),
       headers: {
         'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',  // You can replace * with a specific origin like 'http://127.0.0.1:8080'
+        'Access-Control-Allow-Headers': 'Content-Type',  // Add this if you're sending custom headers
+        'Access-Control-Allow-Methods': 'OPTIONS,POST,GET', // Optional, specify allowed methods if needed
       }
     };
   } catch (e) {
@@ -64,6 +67,9 @@ export const handler = async (event, context) => {
       body: JSON.stringify({ message: 'Error saving error data to PostgreSQL'}),
       headers: {
         'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',  // You can replace * with a specific origin like 'http://127.0.0.1:8080'
+        'Access-Control-Allow-Headers': 'Content-Type',  // Add this if you're sending custom headers
+        'Access-Control-Allow-Methods': 'OPTIONS,POST,GET', // Optional, specify allowed methods if needed
       }
     };
   }
